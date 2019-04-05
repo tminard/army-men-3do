@@ -1,0 +1,142 @@
+TAN
+
+TANK
+JEEP
+BAZ
+
+GREEN
+
+TANK
+JEEP
+BAZ
+
+UNIT CODES
+
+0580 = SARGE
+
+== HEADER spec ==
+== TLAY 1 spec ==
+== TLAY 2 spec ==
+== OATT spec == (Bootcamp start offset-d: 288701)
+4 bytes - OATT string
+4 bytes - number of bytes in OATT block
+4 bytes - number of elements in structure?
+OATT BLOCK {
+	NOTES
+		* This is a structure of N bytes with some general data; varies per map
+}
+
+== MOVE spec ==
+4 bytes - MOVE key string
+4 bytes - (uint32) number of bytes in whole block (256x256, it seems)
+
+NOTES
+	* This appears to be the movement-allowance block, where each byte is a tile and each value is a uint8 representing tile height
+
+== ELOW spec ==
+4 bytes - ELOW key string
+4 bytes - (uint32) number of bytes in whole block (256x256, it seems)
+
+== TRIG spec ==
+4 bytes - TRIG key string
+4 bytes - (uint32) number of bytes in whole block (256x256, it seems)
+
+NOTES
+	* trigger zones? 1 byte per tile. Used to trigger events?
+
+== BPAD spec ==
+4 bytes - BPAD key string
+4 bytes - (uint32) number of bytes in whole pad block (256x256, it seems)
+
+* Read n bytes; note that this appears unused or generally empty?
+
+== NPAD spec ==
+
+4 bytes - NPAD key string
+4 bytes - (uint32) number of bytes in whole pad block (256x256, it seems)
+PAD BLOCK {
+	1 byte - (uint8) Each byte coresponds to a single tile, where each value indicates the pad ID for the given tile.
+NOTES
+	* Likely from upper left to bottom right
+	* Read n number bytes until whole block is processed
+	* PADs can be given a named reference using the pad ID in the associated script in the form `PAD <codename> <padID>`
+}
+
+== SCEN spec ==
+
+
+4 bytes - size of whole scenario block in bytes
+4 bytes - total number of scenarios in block
+16 bytes - scenario 1 name (null terminated)
+FRACTION BLOCK {
+	84 bytes - Fraction header (green -> tan -> blue -> grey)
+{
+	4 byte - separator (08 ASCII)
+	4 byte - padding
+	4 byte - uint32 - number of "reserved" rifle units number (squad number/para drops) - might just be 1 byte. No less than current number of rifle units in game, and breaks at too high a value
+	4 bytes - number of grenaders
+	4 bytes - flamers
+	4 bytes - bazookas
+	4 bytes - Technically "engineers" - but they look and act like regular rifles
+	4 bytes - morters
+	4 bytes - miners?
+	4 bytes - specials?
+	4 bytes - unknown - any change caused crash (usually '5') - maybe "Sarge"?
+	4 bytes - unknown - any change caused crash (usually '3')
+	4 bytes - min jeep units
+	4 bytes - min tank units
+	4 bytes - min half-track units
+	4 bytes - unknown - crashed with value of 1 when zero in MP. Maybe truck/convoy?
+	4 bytes - unknown - too low causes crash. No observable impact for high values. Maybe padding/space for special in specific maps
+	4 bytes - uint32 - 0-3 - number of starting airstrikes
+	4 bytes - uint32 - 0-3 - number of starting paras
+	4 bytes - uint32 - 0-3 - number of starting supports
+	4 byte - uint32 - number of units in fraction
+
+NOTES
+
+- In multiplayer, it appears that what matters is that the unit blocks have values. Placeholders for placement by human players are added based on the unit block values.
+If you want to support placement for AI, then you must add an actual unit in addition to updating the placeholder block.
+
+- Something in this header knows about the unit blocks - app crashes if new units added w/o mod to header, and crashes if mod to header
+	
+}
+	UNITS BLOCK {
+		16 bytes - unit header {
+			1 byte - unit type ID (aligns with their position in the header block)
+			1 byte - unit type CLASS
+			2 byte - padding
+			2 byte uint16 - pixel pos x
+			2 byte - padding
+			2 byte uint16 - pixel pos y
+			2 bytes - unknown - seems unused
+			1 byte - uint8 - rotation angle (0-255, counter-clockwise; where 0 = North, 255(360) = N, and 64(90) = West); doesnt seem to work for sarge
+			1 byte - boolean - not placed (01) vs placed (00) - a value of not-placed in MP will allow human player to manually place; if AI, pos will be used and script can DEPLOY unit
+			1 byte - uint8 number of men in unit - max 9? Possibly due to an internal array on the data type
+			1 byte - uint8 - length of unit name string (including \n)
+		}
+		VARIYING - null-terminated unit name string
+}
+N+ FRACTION BLOCKS - read until EOF, or find byte of hex 08 (BS) after last unit string
+84 bytes - scenario N header
+N+ FRACTION BLOCKS
+...
+
+
+ORIG Green: D1 02  36 02 == low x, low y = 47,251,456 : 37,093,376 OR = 721 x 566
+ORIG Tan: B7 02   E1 0D == low x, high y = 45,547,520 : 232,849,408 OR = 695 x 3553
+Orig grey: 80 0D  AC 01 == high x, low y = 226,492,416 : 28,049,408 OR = 3456 x 428
+Blue: BC 0C   B6 0E == high x, high y = 213,647,360 : 246,808,576 OR = 3260 x 3766
+
+Trt TabL B7 02  36 02 == match Y; low x, low y
+Try tan: D1 02  E1 0D == match X, low x, high y
+
+FACT: Origin must be Upper Left. Maps are 256 x 256 tiles. Each tile is 16x16 pixels. This is 4096 pixels per row.
+
+
+---
+TAN fraction header
+
+desert1
+bootcamp
+desert 2 mp
