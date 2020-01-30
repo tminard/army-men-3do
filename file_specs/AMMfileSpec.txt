@@ -13,6 +13,7 @@ BAZ
 UNIT CODES
 
 0580 = SARGE
+0280 = TANK
 
 == HEADER spec ==
 == TLAY 1 spec ==
@@ -67,7 +68,7 @@ NOTES
 
 4 bytes - size of whole scenario block in bytes
 4 bytes - total number of scenarios in block
-16 bytes - scenario 1 name (null terminated)
+16 bytes - scenario 1 name (null padded
 FRACTION BLOCK {
 	84 bytes - Fraction header (green -> tan -> blue -> grey)
 {
@@ -83,9 +84,9 @@ FRACTION BLOCK {
 	4 bytes - specials?
 	4 bytes - unknown - any change caused crash (usually '5') - maybe "Sarge"?
 	4 bytes - unknown - any change caused crash (usually '3')
-	4 bytes - min jeep units
-	4 bytes - min tank units
-	4 bytes - min half-track units
+	4 bytes - min jeep units (01 80)
+	4 bytes - min tank units (02 80)
+	4 bytes - min half-track units (03 80)
 	4 bytes - unknown - crashed with value of 1 when zero in MP. Maybe truck/convoy?
 	4 bytes - unknown - too low causes crash. No observable impact for high values. Maybe padding/space for special in specific maps
 	4 bytes - uint32 - 0-3 - number of starting airstrikes
@@ -103,7 +104,7 @@ If you want to support placement for AI, then you must add an actual unit in add
 }
 	UNITS BLOCK {
 		16 bytes - unit header {
-			1 byte - unit type ID (aligns with their position in the header block)
+			1 byte - unit type ID equal to their position in the header block - e.g. tank = 02)
 			1 byte - unit type CLASS
 			2 byte - padding
 			2 byte uint16 - pixel pos x

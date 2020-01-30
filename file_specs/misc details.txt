@@ -1,0 +1,5 @@
+"Most of the PC assets were created in 3ds Max (Version 4), and rendered in 8 directions, using a scripted camera. then gone over with Photoshop. The animated character used the same camera, but were rendered in a fixed pallet in gray so they could be tinted tto represent the varios factions. The AXS, AMM, and ATL files were programatically converted from the sprites and materials pieces to A>) reduce memory footprint so it would load faster, and B allow the character sprites to have color changes on the fly. It's been 20 years, so I am unclear as to which file was which, and besides I am an artist, and am bad with math and programming. XD?"
+
+
+
+https://steamcommunity.com/app/549160/discussions/0/2949168687329500775/
