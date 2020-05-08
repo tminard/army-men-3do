@@ -67,7 +67,7 @@ n bytes: contents; nil terminated. Matches folder names ("Alpine, desert, etc")
 4 bytes: "TLAY" section identifier
 4 bytes: number of bytes in section (usually = 256*256*2, + 20)
 + 20 byte header:
-++ 4 bytes: ?, usually 0. Perhaps TLAY number.
+++ 4 bytes: TLay index, 0-based. First instance is 0, second is 1, etc
 ++ 4 bytes: x size (256)
 ++ 4 bytes: y size (256)
 ++ 4 bytes: ?, usually 0
@@ -76,7 +76,8 @@ n bytes: contents; nil terminated. Matches folder names ("Alpine, desert, etc")
 remaining bytes: 256*256*2. Appears to be a series of uint16, representing texture ID of the given tile.
 
 == TLAY 2 spec ==
-
+Same as TLAY 1. It appears you can layer textures. I do not know how they are blended, perhaps using alpha of top layer.
+This is likely used to render hills and valleys, given Bayou is flat and only has 1 TLAY.
 
 == OATT spec == (Bootcamp start offset-d: 288701)
 4 bytes - OATT string
