@@ -1,0 +1,18 @@
+8 bytes: "TILEVERS" identifier (tile version? Doesn't seem to matter)
+4 bytes: length of section (usually 8)
+n bytes: version header (best to leave this alone, but appears to be two uint32 values, as most "versions" are in AM)
+
+4 bytes: "THDR" header indetifier
+4 bytes: length of section containing:
+[
+ 4 bytes: width of a tile (usually 16)
+ 4 bytes: height of a tile (usually 16)
+ 4 bytes: number of tile slots in the image
+ 4 bytes: number of tile slots per row (usually 32)
+ 4 bytes: unknown. Always "00 FF FF 00"
+]
+ 
+
+4 bytes: "DIB" and nil terminated char
+4 bytes: first 4 bytes of bitmap header
+remaining bytes: bitmap image, including header

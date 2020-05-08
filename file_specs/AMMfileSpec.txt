@@ -16,8 +16,68 @@ UNIT CODES
 0280 = TANK
 
 == HEADER spec ==
+4 bytes: magic string "FORM" (46 4F 52 4D)
+4 bytes: (uint32) size in bytes of file contents, from byte 8 (end of this element) to EOF
+
+8 bytes: "MAP CSUM" section identifier
+4 bytes: length of section in bytes (usually 4)
+n/4 bytes: checksum - not sure of the algorithm used, but only seems to matter for ensuring MP maps are the same
+
+4 bytes: "VERS" section identifier
+4 bytes: length of section in bytes (usually 8)
+n/8 bytes: two 32 bit numbers?
+
+4 bytes: "DESC" section identifier (description)
+4 bytes: length of description in bytes
+n bytes: description content (usually empty) - nil terminated
+
+4 bytes: "AFIL" section identifier. Audio DB file
+4 bytes: length of section
+n bytes: contents; nil terminated. Sometimes empty.
+
+4 bytes: "OFIL" section identifier. Objects DB file
+4 bytes: length of section
+n bytes: contents; nil terminated. Usually empty.
+
+4 bytes: "ASCR" section identifier.
+4 bytes: length of section
+n bytes: contents; nil terminated. All empty.
+
+4 bytes: "PSCR" section identifier.
+4 bytes: length of section
+n bytes: contents; nil terminated. All empty.
+
+4 bytes: "MHDR" section identifier. Some kind of header
+4 bytes: length of section; usually 12.
+n bytes: contents; nil terminated. Appears to contain several fields:
++ 4 bytes: x length (256)
++ 4 bytes: y length (256)
++ 4 bytes: num layers? usually "2". Bayou usually "1". Appears to be the number of "TLAY" layers in the file.
+
+4 bytes: "TNAM" section identifier. Texture file name (ATL file).
+4 bytes: length of section
+n bytes: contents; nil terminated. Matches ATL file name.
+
+4 bytes: "ONAM" section identifier. Name or directory of objects.dat.
+4 bytes: length of section
+n bytes: contents; nil terminated. Matches folder names ("Alpine, desert, etc")
+
+
 == TLAY 1 spec ==
+4 bytes: "TLAY" section identifier
+4 bytes: number of bytes in section (usually = 256*256*2, + 20)
++ 20 byte header:
+++ 4 bytes: ?, usually 0. Perhaps TLAY number.
+++ 4 bytes: x size (256)
+++ 4 bytes: y size (256)
+++ 4 bytes: ?, usually 0
+++ 4 bytes: ?, usually 0
+
+remaining bytes: 256*256*2. Appears to be a series of uint16, representing texture ID of the given tile.
+
 == TLAY 2 spec ==
+
+
 == OATT spec == (Bootcamp start offset-d: 288701)
 4 bytes - OATT string
 4 bytes - number of bytes in OATT block
