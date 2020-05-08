@@ -19,7 +19,9 @@ UNIT CODES
 4 bytes: magic string "FORM" (46 4F 52 4D)
 4 bytes: (uint32) size in bytes of file contents, from byte 8 (end of this element) to EOF
 
-8 bytes: "MAP CSUM" section identifier
+4 bytes: "MAP " identifier
+
+4 bytes: "CSUM" section identifier (not always present)
 4 bytes: length of section in bytes (usually 4)
 n/4 bytes: checksum - not sure of the algorithm used, but only seems to matter for ensuring MP maps are the same
 
@@ -81,11 +83,23 @@ This is likely used to render hills and valleys, given Bayou is flat and only ha
 
 == OATT spec == (Bootcamp start offset-d: 288701)
 4 bytes - OATT string
-4 bytes - number of bytes in OATT block
-4 bytes - number of elements in structure?
+4 bytes - number of bytes in OATT block (untrustworthy)
+4 bytes - number of elements in structure
 OATT BLOCK {
 	NOTES
 		* This is a structure of N bytes with some general data; varies per map
+x fields matching number of elements. It appears to be a key-value list, where key is 4 chars, followed by a uint32 value.
+
+1. Repeat x times to load key-value map. NOTE: the length depends on the version in the header.
+[
+	4 bytes uint32 - number of object placements
+	for each placement: [
+		4 bytes: object index? Perhaps links to the objects.dat
+                4 bytes: unknown
+		1 byte: only present when version is 6 or above
+                4 bytes: length of name string inc nil. Can be zero.
+                ^ bytes: char name nil terminated
+        ]
 }
 
 == MOVE spec ==
