@@ -143,11 +143,11 @@ NOTES
 
 4 bytes - size of whole scenario block in bytes
 4 bytes - total number of scenarios in block
-16 bytes - scenario 1 name (null padded
+16 bytes - scenario 1 name (null right padded)
 FRACTION BLOCK {
 	84 bytes - Fraction header (green -> tan -> blue -> grey)
 {
-	4 byte - separator (08 ASCII)
+	4 byte - unknown(08 ASCII, sometimes 07)
 	4 byte - padding
 	4 byte - uint32 - number of "reserved" rifle units number (squad number/para drops) - might just be 1 byte. No less than current number of rifle units in game, and breaks at too high a value
 	4 bytes - number of grenaders
