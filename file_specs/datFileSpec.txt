@@ -1,0 +1,9 @@
+Obviously some kind of archive format.
+
+Appears to be a headerless indexed 8bit bitmap. The palet file included in the folder appears to be a dev leftover.
+
+
+4 bytes - height of bitmap in bytes
+n bytes - pallet data (16 bit RGB
+
+Width is 8 px?

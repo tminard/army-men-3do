@@ -81,7 +81,72 @@ remaining bytes: 256*256*2. Appears to be a series of uint16, representing textu
 Same as TLAY 1. It appears you can layer textures. I do not know how they are blended, perhaps using alpha of top layer.
 This is likely used to render hills and valleys, given Bayou is flat and only has 1 TLAY.
 
+OLAY
+4 bytes - size of OLAY in bytes
+4 bytes - number of object definitions
+
+Then, sets of 4, 4 byte values (16 bytes), x [number of object definitions]: [
+(position is index: appears to map to the OATT index below)
+4 bytes - item class. Hard-coded list of classes
+4 bytes - type no (e.g. grenades are 19 02)
+4 bytes - x pos?
+4 bytes - y pos?
+]
+
+Item classes (aka catagory) are a hard-coded list in the game engine. May differ in AM2+. In AM1, the list
+appears to be the following:
+
+SITEMS (decimal value 25)
+OVERPASS - 24
+MISCELLANEOUS - 23
+RADARBUILDING - 22
+WALLGATE - 21
+GATE - 20
+POWERPLANT - 19
+PILLBOX - etc
+BUILDING
+PRISONCAMP
+HELIPAD
+AIRSTRIP
+AUXBASE
+BASE
+AAGUN
+GUNTURRET
+EXPLOSIVES
+FOOTBRIDGE
+BRIDGE
+WALL
+FENCE
+FALLENTREE - etc
+BIGTREE - 3
+TREE - 2
+BUSH - 1
+ROCK (decimal value 0)
+
+The Types vary, and may only be hard-coded for certain categories like weapons:
+
+MEDPACK
+MEDKIT..
+TOWER_RIFLE.
+EXPLOSIVE...
+MINE....
+SWEEPER.
+AUTO_RIFLE..
+RIFLE...
+LARGE_CANNON....
+MORTAR..
+BAZOOKA.
+GRENADE.
+FLAME_THROWER...
+UNKNOWN?
+
+I have not figured out how to map category and item no to the listing of objects in the DAT file. It doesnt appear that AMM supplies that bridge. It is possible the DAT file assigns items to categories.
+This seems likely, given I have swapped DAT files and map still renders. AMM file says: "put a SPECIAL_ITEM of MINES at X, Y", and the game knows which actual object to place.
+
+No Weapon...Tower Rifle.Mine....Detonator...Mine Sweeper....Auto Rifle..Rifle...Large Cannon....Mortar..Bazooka.Grenade.Flame Thrower...Heavy Machine Gun...Medium Machine Gun..Light Machine Gun...No Item.Unknown Item Type...Null Item.
+
 == OATT spec == (Bootcamp start offset-d: 288701)
+Object Attributes Table.
 4 bytes - OATT string
 4 bytes - number of bytes in OATT block (untrustworthy)
 4 bytes - number of elements in structure
@@ -94,7 +159,7 @@ x fields matching number of elements. It appears to be a key-value list, where k
 [
 	4 bytes uint32 - number of object placements
 	for each placement: [
-		4 bytes: object index? Perhaps links to the objects.dat
+		4 bytes: object index - links to the OLAY above
                 4 bytes: unknown
 		1 byte: only present when version is 6 or above
                 4 bytes: length of name string inc nil. Can be zero.
@@ -175,6 +240,8 @@ NOTES
 If you want to support placement for AI, then you must add an actual unit in addition to updating the placeholder block.
 
 - Something in this header knows about the unit blocks - app crashes if new units added w/o mod to header, and crashes if mod to header
+
+NOTE: There is no required order to the units in the block.
 	
 }
 	UNITS BLOCK {
