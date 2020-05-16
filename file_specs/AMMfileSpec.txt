@@ -143,6 +143,12 @@ UNKNOWN?
 I have not figured out how to map category and item no to the listing of objects in the DAT file. It doesnt appear that AMM supplies that bridge. It is possible the DAT file assigns items to categories.
 This seems likely, given I have swapped DAT files and map still renders. AMM file says: "put a SPECIAL_ITEM of MINES at X, Y", and the game knows which actual object to place.
 
+In the DAT file header is an array of tuple values. The second value is a file offset to the object definition. The first value hasnt been solved yet, but it is a multiple of 32 starting at 32.
+We know weapons are SITEMS. Which have a decimal value of 25. This is the category. It seems likely that this may be a 2-dimensional array, where 1st value is the CATEGORY, and second is the type number.
+
+It appears that shifting the value to the right 15 reveals the category number, matches the above list. I suspect shifting by N will reveal the sequence/type_no. There must be a way to take a category and a type_no and
+convert it into a single uint32.
+
 No Weapon...Tower Rifle.Mine....Detonator...Mine Sweeper....Auto Rifle..Rifle...Large Cannon....Mortar..Bazooka.Grenade.Flame Thrower...Heavy Machine Gun...Medium Machine Gun..Light Machine Gun...No Item.Unknown Item Type...Null Item.
 
 == OATT spec == (Bootcamp start offset-d: 288701)
