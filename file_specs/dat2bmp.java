@@ -70,9 +70,9 @@ public class dat2bmp {
 		int sprite_data[][] = new int[num_sprites][4];
 		
 		for (int i=0; i<num_sprites; i++) {
-			sprite_data[i][0] = readByte(in);
-			sprite_data[i][1] = readByte(in);
-			sprite_data[i][2] = readShort(in);
+			sprite_data[i][0] = readInt(in); // encoded category and type number
+			sprite_data[i][1] = (sprite_data[i][0] & 0x7F8000) >> 15;
+			sprite_data[i][2] = (sprite_data[i][0] & 0x1FE0) >> 5;
 			sprite_data[i][3] = readInt(in); // sprite offset
 		}
 		
@@ -91,7 +91,7 @@ public class dat2bmp {
 			header[7] = readInt(in);
 			
 			System.out.println(filename+"\t"+z+"\t"+
-			                   sprite_data[z][0]+"\t"+sprite_data[z][1]+"\t"+
+			                   sprite_data[z][0]+"\tCategory:"+sprite_data[z][1]+"\tNumber:"+
 							   sprite_data[z][2]+"\tOffset to sprite: "+sprite_data[z][3]+"\t"+
 							   header[0]+"\t"+header[1]+"\t"+header[2]+"\t"+
 							   header[3]+"\t"+header[4]+"\t"+header[5]+"\t"+
@@ -176,7 +176,7 @@ public class dat2bmp {
 			bmp_header[35] = (byte)(size_data >> 8);
 			bmp_header[36] = (byte)(size_data >> 16);
 			
-			OutputStream out = new BufferedOutputStream(new FileOutputStream(new File("des\\"+filename+"_"+header[0]+"_"+header[1]+"_"+z+".A.bmp")));
+			OutputStream out = new BufferedOutputStream(new FileOutputStream(new File("des\\"+sprite_data[z][1]+"_"+sprite_data[z][2]+"_"+z+".A.bmp")));
 			out.write(bmp_header);
 			out.write(pal);
 			out.write(bitmap);
