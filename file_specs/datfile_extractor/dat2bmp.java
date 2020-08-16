@@ -28,22 +28,7 @@ public class dat2bmp {
 	public static void main (String [] args) throws IOException {
 		
 		String filenames[] = {
-			"OBJECTS.DAT",
-			"OBJECTS_1.DAT",
-			"OBJECTS_2.DAT",
-			"OBJECTS_3.DAT",
-			"OBJECTS_4.DAT",
-			"OBJECTS_5.DAT",
-			"OBJECTS_6.DAT",
-			"OBJECTS_7.DAT",
-			"OBJECTS_8.DAT",
-			"OBJECTS_9.DAT",
-			"OBJECTS_10.DAT",
-			"OBJECTS_11.DAT",
-			"OBJECTS_12.DAT",
-			"OBJECTS_13.DAT",
-			"OBJECTS_14.DAT",
-			"OBJECTS_15.DAT"
+			"OBJECTS.DAT"
 		};
 		
 		for (int y=0; y<filenames.length; y++) {

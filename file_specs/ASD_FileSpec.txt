@@ -1,0 +1,16 @@
+ASD files appear in AM1 under "Audio". They contain a database of 16-bit mono wav RIFF audio files.
+
+4 bytes magic number file identifier, followed by a fixed size 2060 byte table header, followed by fmt and data sections for each audio clip.
+
+To extract each audio clip, use a hex editor and copy the entirety of each "fmt" and "data" block into a single new file.
+
+$	fmt<lots_of_stuff>data<lots_more_stuff_until_next_fmt_block>
+
+
+Then, insert the following to the top of the new file before these blocks:
+
+$	RIFF0000WAVE
+
+Then, select all the data to get the total file size in bytes, and subtract 8. Take this number, select the "0000" you inserted into the header, and in the inspector field of your hex editor put in this number as the "unsigned int 32".
+
+Save the file as a "wav" file and you should be able to play it.
