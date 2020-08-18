@@ -29,42 +29,42 @@ class ASDFileExtractor:
 
             content = f.read()
 
-            print("--")
-            print(f"Total size (bytes):\t{len(content)}")
+        print("--")
+        print(f"Total size (bytes):\t{len(content)}")
 
-            if os.path.exists("output"):
-                print("Deleting previous output")
-                for root, dirs, files in os.walk("output"):
-                    for file in files:
-                        if file.endswith(".wav"):
-                            print(f"\t\tdeleting `{file}`")
-                            os.remove(os.path.join(root, file))
-            else:
-                os.makedirs("output")
+        if os.path.exists("output"):
+            print("Deleting previous output")
+            for root, dirs, files in os.walk("output"):
+                for file in files:
+                    if file.endswith(".wav"):
+                        print(f"\t\tdeleting `{file}`")
+                        os.remove(os.path.join(root, file))
+        else:
+            os.makedirs("output")
 
 
-            numAudioClips = unpack_from('i', content, 0)[0]
-            print(f"Num Clips:\t{numAudioClips}")
+        numAudioClips = unpack_from('i', content, 0)[0]
+        print(f"Num Clips:\t{numAudioClips}")
 
-            offset = 2060
-            for id in range(numAudioClips):
-                outputFile = f"output/audio_{id}.wav"
-                print(f"\tExtracting clip {id} to {outputFile}")
+        offset = 2060
+        for id in range(numAudioClips):
+            outputFile = f"output/audio_{id}.wav"
+            print(f"\tExtracting clip {id} to {outputFile}")
 
-                imgHeader = unpack_from('4siHHiiHH', content, offset)
-                imgData = unpack_from('4si', content, offset+24)
-                dataSize = imgData[1]
+            imgHeader = unpack_from('4siHHiiHH', content, offset)
+            imgData = unpack_from('4si', content, offset+24)
+            dataSize = imgData[1]
 
-                offsetEnd = offset + 24+8+dataSize
+            offsetEnd = offset + 24+8+dataSize
 
-                # write the file
-                rawImageContent = content[offset:offsetEnd]
-                riffHeader = pack("4si4s", bytearray("RIFF", "utf-8"), len(rawImageContent)+4, bytearray("WAVE", "utf-8"))
-                with open(outputFile, mode='wb') as out:
-                    out.write(riffHeader)
-                    out.write(rawImageContent)
+            # write the file
+            rawImageContent = content[offset:offsetEnd]
+            riffHeader = pack("4si4s", bytearray("RIFF", "utf-8"), len(rawImageContent)+4, bytearray("WAVE", "utf-8"))
+            with open(outputFile, mode='wb') as out:
+                out.write(riffHeader)
+                out.write(rawImageContent)
 
-                offset = offsetEnd 
+            offset = offsetEnd 
 
         
 
