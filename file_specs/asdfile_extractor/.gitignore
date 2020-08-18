@@ -1,3 +1,4 @@
 *.asd
 venv/*
 venv/
+output/*.wav
