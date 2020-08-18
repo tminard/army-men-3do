@@ -71,7 +71,7 @@ class ASDFileExtractor:
 
 
 print("ASD Army Men 1 Audio Data Extractor")
-print("adelphospro@gmail.com")
+print("Author:\tadelphospro")
 
 parser = argparse.ArgumentParser(description='Army Men 1 ASD file extractor')
 parser.add_argument('asd_file', metavar='ASD_FILE', type=str, help='the ASD file to process')
