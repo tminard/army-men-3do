@@ -1,2 +1,5 @@
 *.class
 OBJECTS*.bmp
+venv/
+*/venv/
+*/venv/*

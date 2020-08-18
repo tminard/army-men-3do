@@ -1,0 +1,50 @@
+//------------------------------------------------
+//--- 010 Editor v10.0.2 Binary Template
+//
+//      File: Army Men 1 ASD
+//   Authors: tminard
+//   Version: 1.0
+//   Purpose: Extract audio clips from AM1 ASD files
+//  Category: Archive
+// File Mask: *.asd
+//  ID Bytes: 56 30 2E 30
+//   History: 
+//------------------------------------------------
+struct ASDFILE {
+    struct HEADER {
+        char magicId[4];
+    } header <bgcolor=cLtGray>;
+    
+    struct LKUPTBL_HDR {
+        int32 numAudioClips;
+    } lookupHeader <bgcolor=cLtGray>;
+
+    struct CLIP_HDR {
+        int32 unknownA;
+        int32 unknownB;
+    } hdrEntry[ file.lookupHeader.numAudioClips ];
+    
+    struct TBL_PADDING {
+        char padding[2056 - (file.lookupHeader.numAudioClips * 8)];
+    } tablePadding;
+
+    struct RIFF_AUDIO_FILE {
+        struct FORMAT_HDR {
+            char _fmt[4];
+            int32 dataLength;
+            ushort format;
+            ushort numChannels;
+            int32 sampleRate;
+            int32 rate;
+            ushort bitType;
+            ushort bitsPerSample;
+        } formatHeader;
+        
+        struct AUDIO_DATA {
+            char _data[4];
+            int32 dataSize;
+            byte data[dataSize];
+        } audioData;
+    } riffFile[ file.lookupHeader.numAudioClips ] <optimize=false>;
+
+} file;
