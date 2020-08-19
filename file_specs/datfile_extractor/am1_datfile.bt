@@ -62,14 +62,14 @@ struct AM1DAT {
             int32 _un7;
             int32 dataSize;
     
-            if (RLEEncodingFlag != 0)
+            if (RLEEncodingFlag != 0 || RLE_unknown == 1)
             {
                 short RLEWidth;
                 short RLEHeight;
 
                 local int32 widthPadded = RLEWidth + (4 - RLEWidth % 4) % 4; // AM likes to round out the image width
 
-                if (RLEEncodingFlag == 8) {
+                if (RLEEncodingFlag == 8 || RLEEncodingFlag == 0) {
                     ushort offset [ height ];
                 } else if (RLEEncodingFlag == 4) {
                     uint32 offset[ height ];
@@ -105,9 +105,11 @@ struct AM1DAT {
                     }
                 }
             } else if (RLEEncodingFlag == 0) {
-                // Uncompressed image data does not contain padding
-                local ubyte rawBmpData[height * width];
-                ReadBytes(rawBmpData, FTell(), sizeof(rawBmpData));
+                local int32 widthPadded = width + (4 - width % 4) % 4;
+                local ubyte rawBmpData[height * widthPadded];
+
+                // fills zeros at the end
+                ReadBytes(rawBmpData, FTell(), height * width);
             } else {
                 Assert(0, SPrintf("RLE must be 8, 4, or 0. Found %i", RLEEncodingFlag));
             }
