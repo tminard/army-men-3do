@@ -2,6 +2,7 @@
 
 import argparse
 import os.path
+import array
 
 from struct import *
 
@@ -21,51 +22,138 @@ class DATFileExtractor:
         print(f"Preparing to extract `{self.filename}`")
 
         with open(self.filename, mode='rb') as f:
-            magicId = f.read(4)
-
-            if magicId != bytearray(b'\x56\x30\x2E\x30'):
-                print(f"`{self.filename}` does not appear to be a valid Army Men DAT file. Aborting.")
-                return
+            checksum = f.read(4)
 
             content = f.read()
 
         print("--")
         print(f"Total size (bytes):\t{len(content)}")
 
-        if os.path.exists("output"):
+        if os.path.exists("output/sprites"):
             print("Deleting previous output")
-            for root, dirs, files in os.walk("output"):
+            for root, dirs, files in os.walk("output/sprites"):
                 for file in files:
-                    if file.endswith(".wav"):
-                        print(f"\t\tdeleting `{file}`")
+                    if file.endswith(".bmp"):
+                        print(f"\t\tdeleting `{root}/{file}`")
                         os.remove(os.path.join(root, file))
         else:
-            os.makedirs("output")
+            os.makedirs("output/sprites")
 
+        if os.path.exists("output/shadows"):
+            print("Deleting previous output")
+            for root, dirs, files in os.walk("output/shadows"):
+                for file in files:
+                    if file.endswith(".bmp"):
+                        print(f"\t\tdeleting `{root}/{file}`")
+                        os.remove(os.path.join(root, file))
+        else:
+            os.makedirs("output/shadows")
 
-        numAudioClips = unpack_from('i', content, 0)[0]
-        print(f"Num Clips:\t{numAudioClips}")
+        offset = 0
+        paletteData = array.array('I')
+        paletteData.frombytes(content[offset:1024])
+        offset += 1024
 
-        offset = 2060
-        for id in range(numAudioClips):
-            outputFile = f"output/audio_{id}.wav"
-            print(f"\tExtracting clip {id} to {outputFile}")
+        numSprites = unpack_from('I', content, offset)[0]
+        offset += 4
 
-            imgHeader = unpack_from('4siHHiiHH', content, offset)
-            imgData = unpack_from('4si', content, offset+24)
-            dataSize = imgData[1]
+        print(f"Num Sprites:\t{numSprites}")
 
-            offsetEnd = offset + 24+8+dataSize
+        # Build lookup table
+        lookupTable = []
+
+        skippedCount = 0
+
+        for id in range(numSprites):
+            encodedCategoryType, dataOffset = unpack_from('II', content, offset)
+            offset += 8
+
+            decodedCategory = (encodedCategoryType & 0x7F8000) >> 15
+            decodedInstance = (encodedCategoryType & 0x1FE0) >> 5
+
+            outputSpriteFile = f"output/sprites/sprite_c{decodedCategory}_t{decodedInstance}_id{id}.bmp"
+
+            print(f"\tExtracting sprite {id} to {outputSpriteFile}")
+
+                
+            d = dataOffset # skip the first field (repeat of encodedCategory). Remember we dont include the first 4 bytes in our content
+            width, height, rleFlag = unpack_from('<3I', content, d)
+            d += (8*3)
+
+            print(f"\t\tWidth:\t{width}px\n\t\tHeight:\t{height}px")
+
+            rleMask = 0b1111
+            rleEncodingMode = rleFlag & rleMask
+
+            rleMaskSecondary = 0b11110000
+            rleModeSec = rleFlag & rleMaskSecondary
+
+            print(f"\t\tRLE Encoding Mode:\t{rleEncodingMode}")
+
+            bmpData = bytearray(0)
+
+            if (rleEncodingMode != 0 or rleModeSec == 16):
+                # only certain fields are set when using RLE
+                rleWidth, rleHeight = unpack_from('<2H', content, d)
+                d += 4
+
+                # Compressed images are trimmed - we need to restore the padding
+                widthPadded = rleWidth + (4 - rleWidth % 4) % 4
+
+                # we can ignore the line lookup table
+                # For RLE8, each entry is a ushort. For RLE4, each entry is a uint32
+                lookupTableLength = height * 2 if (rleEncodingMode == 8 or rleEncodingMode == 0) else height * 4
+                d += lookupTableLength
+
+                # decompress the bitmap
+                bmpData = bytearray((height * widthPadded))
+                for h in range(height - 1, -1, -1):
+                    idx = 0
+                    while (idx < width):
+                        # RLE - read padding byte
+                        t = unpack_from('B', content, d)[0]
+                        d += 1
+
+                        for i in range(t):
+                            x = h*widthPadded+idx+i
+                            bmpData[x] = 0
+                        idx += t
+
+                        # RLE - expand color indexes
+                        p = unpack_from('B', content, d)[0]
+                        d += 1
+
+                        for i in range(p):
+                            bmpData[h*widthPadded+idx+i] = unpack_from('B', content, d+i)[0]
+                        idx += p
+                        d += p
+            elif rleEncodingMode == 0 and rleModeSec == 32:
+                # There is strange padding in this mode I have not figured out
+                skippedCount += 1
+                print(f"Failed to extract id {id}: Non-RLE image data not understood. Skipping...")
+                continue
+            elif rleEncodingMode == 0:
+                # Uncompressed bitmaps are mostly easy
+                widthPadded = width + (4 - width % 4) % 4
+                bmpData = content[d:(d+(height*widthPadded))]
+
+                print("\t\t\tNo compression detected. Extracting raw data...")
+            else:
+                print(f"!! Unrecognized RLE compression format {rleEncodingMode} detected. Expected 0, 4, or 8. Skipping {id}")
+                continue
+
+            # Construct the image format
+            bmpHeader = pack("=bbIII", 0x42, 0x4D, len(bmpData)+54+1024, 0, 54)
+            dibHeader = pack("=IiiHHIIiiII", 40, width, height, 1, 8, 0, 0, 0, 0, 256, 0) 
 
             # write the file
-            rawImageContent = content[offset:offsetEnd]
-            riffHeader = pack("4si4s", bytearray("RIFF", "utf-8"), len(rawImageContent)+4, bytearray("WAVE", "utf-8"))
-            with open(outputFile, mode='wb') as out:
-                out.write(riffHeader)
-                out.write(rawImageContent)
+            with open(outputSpriteFile, mode='wb') as out:
+                out.write(bmpHeader)
+                out.write(dibHeader)
+                out.write(paletteData)
+                out.write(bmpData)
 
-            offset = offsetEnd 
-
+        print(f"Export complete\n\t\tTotal:\t{numSprites}\n\t\tExtracted:\t{numSprites-skippedCount}\n\t\tSkipped:\t{skippedCount}")
         
 
 
