@@ -1,0 +1,118 @@
+//------------------------------------------------
+//--- 010 Editor v10.0.2 Binary Template
+//
+//      File: 
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+typedef int32 EncodedCategoryType <read=DecodeCategoryType, write=EncodeCategoryType>;
+
+string DecodeCategoryType( EncodedCategoryType ct )
+{
+    string s;
+    int32 c = (ct & 0x7F8000) >> 15;
+    int32 t = (ct & 0x1FE0) >> 5;
+    SPrintf(s, "Category: %i, Type: %i", c, t);
+    return s;
+}
+
+void EncodeCategoryType( EncodedCategoryType &ct, string s )
+{
+    int32 c = 0;
+    int32 t = 0;
+    SScanf(s, "Category: %i, Type: %i", c, t);
+    
+    ct = (c << 15) | (t << 5);
+}
+
+struct AM1DAT {
+    int32 _unkChecksum <format=hex>;
+    struct COLOR {
+        ubyte r;
+        ubyte g;
+        ubyte b;
+        ubyte _rsvd;
+    } colorPalette[ 256 ];
+    int32 numSprites <format=decimal>;
+
+    struct SPRITE_HDR {
+        EncodedCategoryType encodedCategoryType;
+
+        int32 dataOffset <format=decimal>;
+        
+        struct SPRITE_DATA {
+            local int64 cur <hidden=true> = FTell();
+            FSeek(spriteHeader.dataOffset);
+
+            EncodedCategoryType categoryType;
+            int32 width;
+            int32 height;
+
+            int32 RLEEncodingFlag : 4;
+            int32 RLE_unknown : 4; // not set in > AM1 files
+            int32 : 24;
+            
+            short _un5; // these 3 fields are unknown
+            short _un6;
+            int32 _un7;
+            int32 dataSize;
+    
+            if (RLEEncodingFlag != 0)
+            {
+                short RLEWidth;
+                short RLEHeight;
+
+                local int32 widthPadded = RLEWidth + (4 - RLEWidth % 4) % 4; // AM likes to round out the image width
+
+                if (RLEEncodingFlag == 8) {
+                    ushort offset [ height ];
+                } else if (RLEEncodingFlag == 4) {
+                    uint32 offset[ height ];
+                }
+
+                // Compressed image data is usually padded
+                local ubyte rawBmpData[height * widthPadded];
+                local int32 h <hidden=true>, idx <hidden=true>, i <hidden=true>;
+                local ubyte t <hidden=true>, p <hidden=true>;
+                for (h = height - 1; h >= 0; h--)
+                {
+                    idx = 0;
+                    while (idx < width)
+                    {
+                        // RLE - read padding
+                        t = ReadUByte();
+                        FSkip(1);
+                        for (i = 0; i < t; i++)
+                        {
+                            rawBmpData[h*widthPadded+idx+i] = 0;
+                        }
+                        idx += t;
+                        
+                        // RLE - expand color indexes
+                        p = ReadUByte();
+                        FSkip(1);
+                        for (i = 0; i < p; i++)
+                        {
+                            rawBmpData[h*widthPadded+idx+i] = ReadUByte();
+                            FSkip(1);
+                        }
+                        idx += p;
+                    }
+                }
+            } else if (RLEEncodingFlag == 0) {
+                // Uncompressed image data does not contain padding
+                local ubyte rawBmpData[height * width];
+                ReadBytes(rawBmpData, FTell(), sizeof(rawBmpData));
+            } else {
+                Assert(0, SPrintf("RLE must be 8, 4, or 0. Found %i", RLEEncodingFlag));
+            }
+
+            FSeek(cur);
+        } spriteData;
+    } spriteHeader[ numSprites ] <optimize=false>;
+} file;
