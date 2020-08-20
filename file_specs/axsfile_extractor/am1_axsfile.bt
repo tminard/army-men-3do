@@ -1,0 +1,73 @@
+//------------------------------------------------
+//--- 010 Editor v10.0.2 Binary Template
+//
+//      File: 
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+LittleEndian(); 
+
+typedef struct {   // rgbq
+    UBYTE   rgbBlue;
+    UBYTE   rgbGreen;
+    UBYTE   rgbRed;
+    UBYTE   rgbReserved;
+} RGBQUAD <read=ReadRGBQUAD>;
+
+string ReadRGBQUAD( RGBQUAD &a )
+{
+    string s;
+    SPrintf( s, "#%02X%02X%02X%02X", a.rgbReserved, a.rgbRed, a.rgbGreen, a.rgbBlue );
+    return s;
+}
+
+// header extracted here
+// In header, each name appears to follow a series of uint32 frame IDs. If the frame ID == 1, then a uint32 padding follows, with a ushort
+// that may indicate delay. It is possible to have multple padings befow the 1. This could mean each byte is a delay identifier? You 
+// may need to read ushorts until you find the 1.
+// The series ends when a byte series 01 80 is detected. This is followed by a uint32 of value 3, then a ubyte sequence string length
+// then the name of strLength, then the above series repeats.
+// That said, each frame seems to be referenced by a uint32 ID. It appears the file is loaded sequentially as there are no offset
+// references or hardcoded IDs, and each rle data set is varies in length
+
+struct AXS {
+    RGBQUAD palette[ 256 ];
+    struct SPRITE {
+        uint32 sectionID; // always 40?
+        uint32 width;
+        uint32 height;
+        ushort planes;
+        ushort bitCount;
+        int32 padding;
+        uint32 dataSize; 
+        uint32 unknown1;
+        uint32 unknown2;
+        uint32 unknown3;
+        uint32 unknown4;
+
+        struct SPRITE_DATA {
+            ushort width;
+            local int32 widthPadded = width + (4 - width % 4) % 4;
+            ushort height;
+            
+            ushort rleLineOffsets[ height ];
+            ubyte rleData[ dataSize - 4 - (height * 2) ];
+        } spriteData;
+
+        uint32 shadowDataSize;
+        if (shadowDataSize > 0) {
+        struct SHADOW_DATA {
+            ushort width;
+            local int32 widthPadded = width + (4 - width % 4) % 4;
+            ushort height;
+            ushort rleLineOffsets[ height ];
+            ubyte rleData[ shadowDataSize - 4 - (height * 2) ];
+        } shadowData;
+        }
+    } spriteEntry[ 241 ] <optimize=false>;
+} axsFile;
