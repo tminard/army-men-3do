@@ -3,8 +3,10 @@
 import argparse
 import os.path
 import array
+import numpy as np
 
 from struct import *
+from PIL import Image, ImageOps
 
 class AXSFileExtractor:
     def __init__(self, filename, args):
@@ -17,6 +19,54 @@ class AXSFileExtractor:
             self.extract()
         else:
             print(f"File `{self.filename}` not found!")
+
+    def write_bitmap(self, outputFile, width, height, bmpData, paletteData):
+        widthPadded = width + (4 - width % 4) % 4
+
+        pal = array.array('B')
+        for c in paletteData:
+            b, g, r, _ = unpack('<BBBB', c.to_bytes(4, byteorder='little', signed=False))
+            pal.fromlist([r, g, b])
+        
+        img = Image.new('P', (widthPadded, height))
+        img.putpalette(pal)
+        img.putdata(bmpData)
+
+         # img = img.convert('RGB')
+        img = ImageOps.flip(img)
+        img.save(outputFile, transparency=0)
+        
+        return outputFile
+
+    def decompress_image(self, width, height, compressedData):
+        widthPadded = width + (4 - width % 4) % 4
+
+        bmpData = bytearray(height * widthPadded)
+        bi = 0
+
+        for h in range(height):
+            idx = 0
+            while (idx < width and bi < len(compressedData)):
+                # RLE - read padding byte
+                t = compressedData[bi]
+                bi += 1
+
+                for i in range(t):
+                    x = h*widthPadded+idx+i
+                    bmpData[x] = 0
+                idx += t
+
+                # RLE - expand color indexes
+                p = compressedData[bi]
+                bi += 1
+
+                for i in range(p):
+                    bmpData[h*widthPadded+idx+i] = compressedData[bi+i]
+                idx += p
+                bi += p
+        
+        return bmpData
+
 
     def extract(self):
         print(f"Preparing to extract `{self.filename}`")
@@ -52,18 +102,17 @@ class AXSFileExtractor:
         paletteData.frombytes(content[offset:1024])
         offset += 1024
 
-
         # Build lookup table
         lookupTable = []
 
-        numSprites = 241
+        numSpritesExtracted = 0
         d = offset
 
+        while d < len(content):
+            outputSpriteFile = f"output/sprites/sprite_id{numSpritesExtracted}.png"
+            outputShadowFile = f"output/sprites/sprite_id{numSpritesExtracted}_shadow.bmp"
 
-        for id in range(numSprites):
-            outputSpriteFile = f"output/sprites/sprite_id{id}.bmp"
-
-            print(f"\tExtracting sprite {id} to {outputSpriteFile}")
+            print(f"\tExtracting sprite {numSpritesExtracted + 1} to {outputSpriteFile}")
             d += (4*4) + (2*2) # skip the header information
 
             dataSize = unpack_from('<I', content, d)[0]
@@ -76,11 +125,6 @@ class AXSFileExtractor:
 
             print(f"\t\tData Size:\t{dataSize}\n\t\tWidth:\t{width}px\n\t\tHeight:\t{height}px")
 
-            bmpData = bytearray(0)
-
-            # Compressed images are trimmed - we need to restore the padding
-            widthPadded = width + (4 - width % 4) % 4
-
             # we can ignore the line lookup table
             lookupTableLength = height * 2
             d += lookupTableLength
@@ -89,48 +133,21 @@ class AXSFileExtractor:
             compressedData = content[d:(d + compressedDataSize)]
 
             # decompress the bitmap
-            bmpData = bytearray((height * widthPadded))
+            bmpData = self.decompress_image(width, height, compressedData)
+            self.write_bitmap(outputSpriteFile, width, height, bmpData, paletteData)
 
-            bi = 0
-            for h in range(height):
-                idx = 0
-                while (idx < width and bi < len(compressedData)):
-                    # RLE - read padding byte
-                    t = compressedData[bi]
-                    bi += 1
-
-                    for i in range(t):
-                        x = h*widthPadded+idx+i
-                        bmpData[x] = 0
-                    idx += t
-
-                    # RLE - expand color indexes
-                    p = compressedData[bi]
-                    bi += 1
-
-                    for i in range(p):
-                        bmpData[h*widthPadded+idx+i] = compressedData[bi+i]
-                    idx += p
-                    bi += p
-
-            # Construct the image format
-            bmpHeader = pack("=bbIII", 0x42, 0x4D, len(bmpData)+54+1024, 0, 54)
-            dibHeader = pack("=IiiHHIIiiII", 40, width, height, 1, 8, 0, 0, 0, 0, 256, 0) 
-
-            # write the file
-            with open(outputSpriteFile, mode='wb') as out:
-                out.write(bmpHeader)
-                out.write(dibHeader)
-                out.write(paletteData)
-                out.write(bmpData)
 
             d += compressedDataSize
 
             # skip the shadow data for now
             shadowDataSize = unpack_from('<I', content, d)[0]
-            d += (shadowDataSize + 4)
+            d += 4
 
-        print(f"Export complete\n\t\tTotal:\t{numSprites}\n\t\tExtracted:\t{numSprites}")
+            d += shadowDataSize
+
+            numSpritesExtracted += 1
+
+        print(f"Export complete\n\t\tTotal:\t{numSpritesExtracted}")
 
 
 
