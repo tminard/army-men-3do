@@ -21,14 +21,12 @@ class AXSFileExtractor:
             print(f"File `{self.filename}` not found!")
 
     def write_bitmap(self, outputFile, width, height, bmpData, paletteData):
-        widthPadded = width + (4 - width % 4) % 4
-
         pal = array.array('B')
         for c in paletteData:
             b, g, r, _ = unpack('<BBBB', c.to_bytes(4, byteorder='little', signed=False))
             pal.fromlist([r, g, b])
         
-        img = Image.new('P', (widthPadded, height))
+        img = Image.new('P', (width, height))
         img.putpalette(pal)
         img.putdata(bmpData)
 
@@ -38,10 +36,23 @@ class AXSFileExtractor:
         
         return outputFile
 
-    def decompress_image(self, width, height, compressedData):
-        widthPadded = width + (4 - width % 4) % 4
+    def build_image(self, outputFile, width, height, bmpData, paletteData):
 
-        bmpData = bytearray(height * widthPadded)
+        pal = array.array('B')
+        for c in paletteData:
+            b, g, r, _ = unpack('<BBBB', c.to_bytes(4, byteorder='little', signed=False))
+            pal.fromlist([r, g, b])
+        
+        img = Image.new('P', (width, height))
+        img.putpalette(pal)
+        img.putdata(bmpData)
+
+        img = ImageOps.flip(img)
+        
+        return img
+
+    def decompress_image(self, width, height, compressedData):
+        bmpData = bytearray(height * width)
         bi = 0
 
         for h in range(height):
@@ -52,7 +63,7 @@ class AXSFileExtractor:
                 bi += 1
 
                 for i in range(t):
-                    x = h*widthPadded+idx+i
+                    x = h*width+idx+i
                     bmpData[x] = 0
                 idx += t
 
@@ -61,7 +72,7 @@ class AXSFileExtractor:
                 bi += 1
 
                 for i in range(p):
-                    bmpData[h*widthPadded+idx+i] = compressedData[bi+i]
+                    bmpData[h*width+idx+i] = compressedData[bi+i]
                 idx += p
                 bi += p
         
