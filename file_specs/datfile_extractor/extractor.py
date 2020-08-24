@@ -3,8 +3,10 @@
 import argparse
 import os.path
 import array
+import numpy as np
 
 from struct import *
+from PIL import Image, ImageOps
 
 class DATFileExtractor:
     def __init__(self, filename, args):
@@ -17,6 +19,23 @@ class DATFileExtractor:
             self.extract()
         else:
             print(f"File `{self.filename}` not found!")
+
+    def write_bitmap(self, outputFile, width, height, bmpData, paletteData):
+        pal = array.array('B')
+        for c in paletteData:
+            b, g, r, _ = unpack('<BBBB', c.to_bytes(4, byteorder='little', signed=False))
+            pal.fromlist([r, g, b])
+        
+        img = Image.new('P', (width, height))
+        img.putpalette(pal)
+        img.putdata(bmpData)
+
+         # img = img.convert('RGB')
+        img = ImageOps.flip(img)
+        # img = ImageOps.mirror(img)
+        img.save(outputFile, transparency=0)
+        
+        return outputFile
 
     def extract(self):
         print(f"Preparing to extract `{self.filename}`")
@@ -33,7 +52,7 @@ class DATFileExtractor:
             print("Deleting previous output")
             for root, dirs, files in os.walk("output/sprites"):
                 for file in files:
-                    if file.endswith(".bmp"):
+                    if file.endswith(".png"):
                         print(f"\t\tdeleting `{root}/{file}`")
                         os.remove(os.path.join(root, file))
         else:
@@ -43,7 +62,7 @@ class DATFileExtractor:
             print("Deleting previous output")
             for root, dirs, files in os.walk("output/shadows"):
                 for file in files:
-                    if file.endswith(".bmp"):
+                    if file.endswith(".png"):
                         print(f"\t\tdeleting `{root}/{file}`")
                         os.remove(os.path.join(root, file))
         else:
@@ -71,7 +90,7 @@ class DATFileExtractor:
             decodedCategory = (encodedCategoryType & 0x7F8000) >> 15
             decodedInstance = (encodedCategoryType & 0x1FE0) >> 5
 
-            outputSpriteFile = f"output/sprites/sprite_c{decodedCategory}_t{decodedInstance}_id{id}.bmp"
+            outputSpriteFile = f"output/sprites/sprite_c{decodedCategory}_t{decodedInstance}_id{id}.png"
 
             print(f"\tExtracting sprite {id} to {outputSpriteFile}")
 
@@ -143,15 +162,16 @@ class DATFileExtractor:
                 continue
 
             # Construct the image format
-            bmpHeader = pack("=bbIII", 0x42, 0x4D, len(bmpData)+54+1024, 0, 54)
-            dibHeader = pack("=IiiHHIIiiII", 40, width, height, 1, 8, 0, 0, 0, 0, 256, 0) 
+            # bmpHeader = pack("=bbIII", 0x42, 0x4D, len(bmpData)+54+1024, 0, 54)
+            # dibHeader = pack("=IiiHHIIiiII", 40, width, height, 1, 8, 0, 0, 0, 0, 256, 0) 
+            self.write_bitmap(outputSpriteFile, widthPadded, height, bmpData, paletteData)
 
             # write the file
-            with open(outputSpriteFile, mode='wb') as out:
-                out.write(bmpHeader)
-                out.write(dibHeader)
-                out.write(paletteData)
-                out.write(bmpData)
+            # with open(outputSpriteFile, mode='wb') as out:
+            #    out.write(bmpHeader)
+            #    out.write(dibHeader)
+            #    out.write(paletteData)
+            #    out.write(bmpData)
 
         print(f"Export complete\n\t\tTotal:\t{numSprites}\n\t\tExtracted:\t{numSprites-skippedCount}\n\t\tSkipped:\t{skippedCount}")
         

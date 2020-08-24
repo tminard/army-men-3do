@@ -3,3 +3,5 @@ venv/*
 venv/
 output/shadows/*.bmp
 output/sprites/*.bmp
+.png
+*.png

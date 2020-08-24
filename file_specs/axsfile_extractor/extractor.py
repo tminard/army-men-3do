@@ -31,7 +31,8 @@ class AXSFileExtractor:
         img.putdata(bmpData)
 
          # img = img.convert('RGB')
-        img = ImageOps.flip(img)
+        # img = ImageOps.flip(img)
+        # img = ImageOps.mirror(img)
         img.save(outputFile, transparency=0)
         
         return outputFile
