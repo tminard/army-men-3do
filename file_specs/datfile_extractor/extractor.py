@@ -161,17 +161,7 @@ class DATFileExtractor:
                 print(f"!! Unrecognized RLE compression format {rleEncodingMode} detected. Expected 0, 4, or 8. Skipping {id}")
                 continue
 
-            # Construct the image format
-            # bmpHeader = pack("=bbIII", 0x42, 0x4D, len(bmpData)+54+1024, 0, 54)
-            # dibHeader = pack("=IiiHHIIiiII", 40, width, height, 1, 8, 0, 0, 0, 0, 256, 0) 
             self.write_bitmap(outputSpriteFile, widthPadded, height, bmpData, paletteData)
-
-            # write the file
-            # with open(outputSpriteFile, mode='wb') as out:
-            #    out.write(bmpHeader)
-            #    out.write(dibHeader)
-            #    out.write(paletteData)
-            #    out.write(bmpData)
 
         print(f"Export complete\n\t\tTotal:\t{numSprites}\n\t\tExtracted:\t{numSprites-skippedCount}\n\t\tSkipped:\t{skippedCount}")
         
